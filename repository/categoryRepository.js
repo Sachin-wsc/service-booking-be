@@ -23,8 +23,20 @@ const findById = async (id) => {
   return rows[0];
 };
 
+const update = async (id, data) => {
+  try {
+    const { name, description, updated_by } = data;
+    await db.execute(
+      "UPDATE categories SET name=?, description=?, updated_by=?, updated_at=CURRENT_TIMESTAMP WHERE id=?",
+      [name, description || null, updated_by || null, id]
+    );
+  } catch (err) {
+    throw new Error("Category update failed");
+  }
+};
+
 const remove = async (id) => {
   await db.execute("DELETE FROM categories WHERE id=?", [id]);
 };
 
-export default { create, findAll, findById, remove };
+export default { create, findAll, findById, update, remove };

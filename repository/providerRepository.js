@@ -15,7 +15,7 @@ const create = async (data) => {
 
 const approve = async (id, approvedBy) => {
   await db.execute(
-    "UPDATE provider SET status='approved', approved_at = CURRENT_TIMESTAMP, updated_by = ? WHERE id=?",
+    "UPDATE provider SET status='approved',  updated_by = ? WHERE id=?",
     [approvedBy || null, id]
   );
 };

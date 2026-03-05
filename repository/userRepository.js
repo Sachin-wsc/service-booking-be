@@ -2,9 +2,11 @@ import db from "../config/db.js";
 
 const create = async (data) => {
   try {
+    // allow caller to specify initial status (e.g., pending for providers)
+    const status = data.status || "active";
     const [result] = await db.execute(
       "INSERT INTO users (name,email,password,phone,role_id,status,created_by) VALUES (?,?,?,?,?,?,?)",
-      [data.name, data.email, data.password, data.phone || null, data.role_id, "active", data.created_by || null]
+      [data.name, data.email, data.password, data.phone || null, data.role_id, status, data.created_by || null]
     );
     return result.insertId;
   } catch (err) {
@@ -58,4 +60,16 @@ const blockUser = async (id, blockedBy) => {
   }
 };
 
-export default { create, findByEmail, findAll, findById, blockUser };
+// activate or change status of user by provider row
+const updateStatusByProviderId = async (providerId, status, updatedBy) => {
+  await db.execute(
+    `UPDATE users u
+       JOIN provider p ON p.user_id = u.id
+       SET u.status = ?, u.updated_by = ?
+       WHERE p.id = ?`,
+    [status, updatedBy || null, providerId]
+  );
+};
+
+
+export default { create, findByEmail, findAll, findById, blockUser, updateStatusByProviderId };

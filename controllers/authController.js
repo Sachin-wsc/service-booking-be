@@ -34,12 +34,16 @@ const register = async (req, res) => {
 
     const hashedPassword = await hashService.hashPassword(password);
 
+    // provider users start as pending, others active
+    const initialStatus = role === "provider" ? "pending" : "active";
+
     const userId = await userRepository.create({
       name,
       email,
       password: hashedPassword,
       phone,
       role_id: roleId,
+      status: initialStatus,
       created_by: null
     });
 
@@ -76,9 +80,14 @@ const login = async (req, res) => {
     const user = await userRepository.findByEmail(email);
     if (!user) return res.status(404).json({ message: "User not found" });
 
-    // Prevent blocked users from logging in
-    if (user.status === 'blocked') {
-      return res.status(403).json({ message: "User is blocked" });
+    // Providers must be approved before accessing
+    if (user.role === 'provider') {
+      if (user.status === 'pending') {
+        return res.status(403).json({ message: "Waiting for admin approval" });
+      }
+      if (user.status === 'blocked') {
+        return res.status(403).json({ message: "User is blocked" });
+      }
     }
 
     const valid = await hashService.comparePassword(password, user.password);
