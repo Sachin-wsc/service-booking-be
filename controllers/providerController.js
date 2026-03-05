@@ -16,12 +16,20 @@ const createService = async (req, res) => {
       return res.status(400).json({ message: "Price must be greater than 0" });
     }
 
-    // Get provider_id from user_id
-    const providers = await providerRepository.findAll();
-    const provider = providers.find(p => p.user_id === req.user.id);
+    // Get provider profile
+    const provider = await providerRepository.findByUserId(req.user.id);
     
     if (!provider) {
       return res.status(404).json({ message: "Provider profile not found" });
+    }
+
+    // RESTRICTION: Provider can only create services in their registered category
+    if (provider.category_id !== category_id) {
+      return res.status(403).json({ 
+        message: `You can only create services in your registered category: ${provider.category_name}`,
+        allowed_category_id: provider.category_id,
+        allowed_category_name: provider.category_name
+      });
     }
 
     const serviceId = await serviceRepository.create({
@@ -41,9 +49,8 @@ const createService = async (req, res) => {
 
 const getProviderServices = async (req, res) => {
   try {
-    // Get provider_id from user_id
-    const providers = await providerRepository.findAll();
-    const provider = providers.find(p => p.user_id === req.user.id);
+    // Get provider profile
+    const provider = await providerRepository.findByUserId(req.user.id);
     
     if (!provider) {
       return res.status(404).json({ message: "Provider profile not found" });
@@ -66,8 +73,7 @@ const getServiceById = async (req, res) => {
     }
 
     // Verify ownership
-    const providers = await providerRepository.findAll();
-    const provider = providers.find(p => p.user_id === req.user.id);
+    const provider = await providerRepository.findByUserId(req.user.id);
     
     if (service.provider_id !== provider?.id) {
       return res.status(403).json({ message: "Access denied" });
@@ -99,11 +105,19 @@ const updateService = async (req, res) => {
     }
 
     // Verify ownership
-    const providers = await providerRepository.findAll();
-    const provider = providers.find(p => p.user_id === req.user.id);
+    const provider = await providerRepository.findByUserId(req.user.id);
     
     if (service.provider_id !== provider?.id) {
       return res.status(403).json({ message: "Access denied" });
+    }
+
+    // RESTRICTION: Provider can only update to their registered category
+    if (provider.category_id !== category_id) {
+      return res.status(403).json({ 
+        message: `You can only use your registered category: ${provider.category_name}`,
+        allowed_category_id: provider.category_id,
+        allowed_category_name: provider.category_name
+      });
     }
 
     await serviceRepository.update(id, {
@@ -130,8 +144,7 @@ const deleteService = async (req, res) => {
     }
 
     // Verify ownership
-    const providers = await providerRepository.findAll();
-    const provider = providers.find(p => p.user_id === req.user.id);
+    const provider = await providerRepository.findByUserId(req.user.id);
     
     if (service.provider_id !== provider?.id) {
       return res.status(403).json({ message: "Access denied" });
