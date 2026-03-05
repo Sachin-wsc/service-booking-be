@@ -20,7 +20,8 @@ const register = async (req, res) => {
       country,
       zip,
       Buisness_name,
-      description
+      description,
+      category_id
     } = req.body;
 
     // Validation middleware already verified inputs
@@ -57,10 +58,16 @@ const register = async (req, res) => {
     });
 
     if (role === "provider") {
+      // Validate category_id is provided for providers
+      if (!category_id) {
+        return res.status(400).json({ message: "Category is required for providers" });
+      }
+      
       await providerRepository.create({ 
         user_id: userId, 
         Buisness_name, 
         description,
+        category_id,
         created_by: userId
       });
     }
